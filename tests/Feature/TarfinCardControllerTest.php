@@ -54,14 +54,23 @@ class TarfinCardControllerTest extends TestCase
      */
     public function a_customer_can_not_create_an_invalid_tarfin_card(): void
     {
-        // 1. Arrange 🏗
-        // TODO:
+        $customer = User::factory()->create();
+        Passport::actingAs(
+            $customer,
+            ['create']
+        );
 
-        // 2. Act 🏋🏻‍
-        // TODO:
-
-        // 3. Assert ✅
-        // TODO:
+        $response = $this->post($this->api,['type' => $this->faker->text()],['Accept' => 'application/json']);
+        $expectedJson = [
+            "message" => "The selected type is invalid.",
+            "errors" => [
+                "type" => [
+                    "The selected type is invalid."
+                ]
+            ]
+       ];
+       
+       $response->assertUnprocessable()->assertJson($expectedJson);
     }
 
     /**
