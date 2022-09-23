@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Http\Resources\TarfinCardResource;
+use App\Models\TarfinCard;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,14 +80,19 @@ class TarfinCardControllerTest extends TestCase
      */
     public function a_customer_can_see_a_tarfin_card(): void
     {
-        // 1. Arrange 🏗
-        // TODO:
+        $customer = User::factory()->create();
+        Passport::actingAs(
+            $customer,
+            ['view']
+        );
 
-        // 2. Act 🏋🏻‍
-        // TODO:
+        $tarfinCard = TarfinCard::factory()->forCustomer($customer)->create();
 
-        // 3. Assert ✅
-        // TODO:
+        $expectedJson = ['data' => json_decode((new TarfinCardResource($tarfinCard))->toJson(),true)];
+
+        $response = $this->get($this->api . '/' . $tarfinCard->id);
+        
+        $response->assertOk()->assertJson($expectedJson);
     }
 
     /**
