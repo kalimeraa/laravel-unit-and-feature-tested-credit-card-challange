@@ -192,7 +192,6 @@ class TarfinCardControllerTest extends TestCase
         );
 
         $response = $this->delete($this->api . '/' . $tarfinCard->id);
-        $response->json();
         $expectedJson = ['data' => json_decode((new TarfinCardResource($tarfinCard->refresh()))->toJson(),true)];
 
         $response->assertOk()->assertJson($expectedJson);
