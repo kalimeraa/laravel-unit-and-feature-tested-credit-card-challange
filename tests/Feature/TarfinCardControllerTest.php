@@ -116,14 +116,18 @@ class TarfinCardControllerTest extends TestCase
      */
     public function a_customer_can_list_tarfin_cards(): void
     {
-        // 1. Arrange 🏗
-        // TODO:
+        $customer = User::factory()->create();
+        Passport::actingAs(
+            $customer,
+            ['view-any']
+        );
 
-        // 2. Act 🏋🏻‍
-        // TODO:
-
-        // 3. Assert ✅
-        // TODO:
+        $tarfinCards = TarfinCard::factory()->forCustomer($customer)->active()->count(5)->create();
+        $collection = json_decode(TarfinCardResource::collection($tarfinCards)->toJson(),true);
+        $expectedJson = ['data' => $collection];
+        $response = $this->get($this->api);
+        
+        $response->assertOk()->assertJson($expectedJson);
     }
 
     /**
