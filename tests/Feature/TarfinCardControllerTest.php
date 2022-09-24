@@ -30,10 +30,7 @@ class TarfinCardControllerTest extends TestCase
     public function a_customer_can_create_a_tarfin_card(): void
     {
         $customer = User::factory()->create();
-        Passport::actingAs(
-            $customer,
-            ['create']
-        );
+        Passport::actingAs($customer,['create']);
 
         $creditCardType = $this->faker->creditCardType();
         $response = $this->post($this->api,['type' => $creditCardType]);
@@ -159,17 +156,70 @@ class TarfinCardControllerTest extends TestCase
     public function a_customer_can_deactivate_the_tarfin_card(): void
     {
         $customer = User::factory()->create();
-        Passport::actingAs(
-            $customer,
-            ['update']
-        );
-
+        Passport::actingAs($customer,['update']);
         $tarfinCard = TarfinCard::factory()->forCustomer($customer)->active()->create();
         $payload = ['is_active' => false];
 
         $response = $this->put($this->api . '/' . $tarfinCard->id,$payload);
 
         $response->assertOk()->assertJson(['data' => $payload]);
+    }
+
+    /**
+     * @test
+     */
+    public function a_customer_can_not_update_a_tarfin_card_of_another_customer()
+    {
+        $tarfinCard = TarfinCard::factory()->create();
+        $customer = User::factory()->create();
+        Passport::actingAs($customer,['update']);
+        
+        $response = $this->put($this->api . '/' . $tarfinCard->id);
+        $response->assertForbidden();
+    }
+
+    /**
+     * @test
+     */
+    public function it_must_be_shown_is_active_parameter_should_be_boolean_for_updating_a_tarfin_card()
+    {
+        $customer = User::factory()->create();
+        Passport::actingAs($customer,['update']);
+        $tarfinCard = TarfinCard::factory()->forCustomer($customer)->create();
+        $response = $this->put($this->api.'/' . $tarfinCard->id,['is_active' => $this->faker->name],['accept' => 'application/json']);
+
+        $expectedJson = [
+            "message" => "The is active field must be true or false.",
+            "errors" => [
+                "is_active" => [
+                    "The is active field must be true or false."
+                ]
+            ]
+       ];
+
+       $response->assertUnprocessable()->assertJson($expectedJson);
+    }
+
+    /**
+     * @test
+     */
+    public function it_must_be_shown_is_active_parameter_required_for_updating_a_tarfin_card()
+    {
+        $customer = User::factory()->create();
+        Passport::actingAs($customer,['update']);
+
+        $tarfinCard = TarfinCard::factory()->forCustomer($customer)->create();
+        $response = $this->put($this->api.'/' . $tarfinCard->id,[],['accept' => 'application/json']);
+        $expectedJson = [
+            "message" => "The is active field is required.",
+            "errors" => [
+                "is_active" => [
+                    "The is active field is required."
+                ]
+            ]
+       ];
+
+       $response->assertUnprocessable()->assertJson($expectedJson);
     }
 
     /**
@@ -186,18 +236,13 @@ class TarfinCardControllerTest extends TestCase
             'message'        => "Your Tarfin Card #{$tarfinCard->number} is deleted.",
         ]);
 
-        Passport::actingAs(
-            $customer,
-            ['delete']
-        );
+        Passport::actingAs($customer,['delete']);
 
         $response = $this->delete($this->api . '/' . $tarfinCard->id);
         $expectedJson = ['data' => json_decode((new TarfinCardResource($tarfinCard->refresh()))->toJson(),true)];
 
         $response->assertOk()->assertJson($expectedJson);
-        Notification::assertSentTo(
-            [$customer], TarfinCardDeletedNotification::class
-        );
+        Notification::assertSentTo([$customer], TarfinCardDeletedNotification::class);
 
         Http::assertSent(function (Request $request) use($tarfinCard) {
             return $request->url() == 'http://you-should-mock-this-mail-service' &&
@@ -206,5 +251,18 @@ class TarfinCardControllerTest extends TestCase
         });
 
         $this->assertSoftDeleted('tarfin_cards',['id' => $tarfinCard->id]);
+    }
+
+    /**
+     * @test
+     */
+    public function a_customer_can_not_delete_a_tarfin_card_of_another_customer()
+    {
+        $tarfinCard = TarfinCard::factory()->create();
+        $customer = User::factory()->create();
+        Passport::actingAs($customer,['delete']);
+        
+        $response = $this->delete($this->api . '/' . $tarfinCard->id);
+        $response->assertForbidden();
     }
 }
