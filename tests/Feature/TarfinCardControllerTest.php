@@ -205,5 +205,7 @@ class TarfinCardControllerTest extends TestCase
                    $request['tarfin_card_id'] == $tarfinCard->id &&
                    $request['message'] == "Your Tarfin Card #{$tarfinCard->number} is deleted.";
         });
+
+        $this->assertSoftDeleted('tarfin_cards',['id' => $tarfinCard->id]);
     }
 }
