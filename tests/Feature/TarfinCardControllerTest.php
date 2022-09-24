@@ -100,14 +100,15 @@ class TarfinCardControllerTest extends TestCase
      */
     public function a_customer_can_not_see_a_tarfin_card_of_another_customer(): void
     {
-        // 1. Arrange 🏗
-        // TODO:
-
-        // 2. Act 🏋🏻‍
-        // TODO:
-
-        // 3. Assert ✅
-        // TODO:
+        $tarfinCard = TarfinCard::factory()->create();
+        $customer = User::factory()->create();
+        Passport::actingAs(
+            $customer,
+            ['view']
+        );
+        
+        $response = $this->get($this->api . '/' . $tarfinCard->id);
+        $response->assertForbidden();
     }
 
     /**
