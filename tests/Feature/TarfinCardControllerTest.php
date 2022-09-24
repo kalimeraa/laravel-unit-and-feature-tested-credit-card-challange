@@ -7,12 +7,16 @@ namespace Tests\Feature;
 use App\Http\Resources\TarfinCardResource;
 use App\Models\TarfinCard;
 use App\Models\User;
+use App\Notifications\TarfinCardDeletedNotification;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
 use Laravel\Passport\Passport;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Http\Client\Request;
 
 class TarfinCardControllerTest extends TestCase
 {
@@ -135,14 +139,18 @@ class TarfinCardControllerTest extends TestCase
      */
     public function a_customer_can_activate_the_tarfin_card(): void
     {
-        // 1. Arrange 🏗
-        // TODO:
+        $customer = User::factory()->create();
+        Passport::actingAs(
+            $customer,
+            ['update']
+        );
 
-        // 2. Act 🏋🏻‍
-        // TODO:
+        $tarfinCard = TarfinCard::factory()->forCustomer($customer)->deactive()->create();
+        $payload = ['is_active' => true];
 
-        // 3. Assert ✅
-        // TODO:
+        $response = $this->put($this->api . '/' . $tarfinCard->id,$payload);
+
+        $response->assertOk()->assertJson(['data' => $payload]);
     }
 
     /**
@@ -150,14 +158,18 @@ class TarfinCardControllerTest extends TestCase
      */
     public function a_customer_can_deactivate_the_tarfin_card(): void
     {
-        // 1. Arrange 🏗
-        // TODO:
+        $customer = User::factory()->create();
+        Passport::actingAs(
+            $customer,
+            ['update']
+        );
 
-        // 2. Act 🏋🏻‍
-        // TODO:
+        $tarfinCard = TarfinCard::factory()->forCustomer($customer)->active()->create();
+        $payload = ['is_active' => false];
 
-        // 3. Assert ✅
-        // TODO:
+        $response = $this->put($this->api . '/' . $tarfinCard->id,$payload);
+
+        $response->assertOk()->assertJson(['data' => $payload]);
     }
 
     /**
@@ -165,15 +177,33 @@ class TarfinCardControllerTest extends TestCase
      */
     public function a_customer_can_delete_a_tarfin_card(): void
     {
-        // 1. Arrange 🏗
-        // TODO:
+        Notification::fake();
+        Http::fake();
+        $customer = User::factory()->create();
+        $tarfinCard = TarfinCard::factory()->forCustomer($customer)->create();
+        Http::post('http://you-should-mock-this-mail-service', [
+            'tarfin_card_id' => $tarfinCard->id,
+            'message'        => "Your Tarfin Card #{$tarfinCard->number} is deleted.",
+        ]);
 
-        // 2. Act 🏋🏻‍
-        // TODO:
+        Passport::actingAs(
+            $customer,
+            ['delete']
+        );
 
-        // 3. Assert ✅
-        // TODO:
+        $response = $this->delete($this->api . '/' . $tarfinCard->id);
+        $response->json();
+        $expectedJson = ['data' => json_decode((new TarfinCardResource($tarfinCard->refresh()))->toJson(),true)];
+
+        $response->assertOk()->assertJson($expectedJson);
+        Notification::assertSentTo(
+            [$customer], TarfinCardDeletedNotification::class
+        );
+
+        Http::assertSent(function (Request $request) use($tarfinCard) {
+            return $request->url() == 'http://you-should-mock-this-mail-service' &&
+                   $request['tarfin_card_id'] == $tarfinCard->id &&
+                   $request['message'] == "Your Tarfin Card #{$tarfinCard->number} is deleted.";
+        });
     }
-
-    // THE MORE TESTS THE MORE POINTS 🏆
 }
