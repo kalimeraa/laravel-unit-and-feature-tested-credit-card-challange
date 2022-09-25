@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Http\Resources\TarfinCardResource;
 use App\Models\TarfinCard;
 use App\Models\User;
 use App\Notifications\TarfinCardDeletedNotification;
@@ -87,11 +86,16 @@ class TarfinCardControllerTest extends TestCase
 
         $tarfinCard = TarfinCard::factory()->forCustomer($customer)->create();
 
-        $expectedJson = ['data' => json_decode((new TarfinCardResource($tarfinCard))->toJson(),true)];
-
         $response = $this->get($this->api . '/' . $tarfinCard->id);
-        
-        $response->assertOk()->assertJson($expectedJson);
+
+        $response->assertOk()->assertJson(fn (AssertableJson $json) =>
+        $json->has('data')->first(fn ($json) => 
+                $json->where('id', $tarfinCard->id)
+                     ->where('type', $tarfinCard->type)
+                     ->where('is_active', $tarfinCard->is_active)
+                     ->where('expiration_date', fn(string $date) => $tarfinCard->expiration_date->eq($date))
+                     ->where('number',$tarfinCard->number)
+       ));
     }
 
     /**
@@ -121,12 +125,24 @@ class TarfinCardControllerTest extends TestCase
             ['view-any']
         );
 
-        $tarfinCards = TarfinCard::factory()->forCustomer($customer)->active()->count(5)->create();
-        $collection = json_decode(TarfinCardResource::collection($tarfinCards)->toJson(),true);
-        $expectedJson = ['data' => $collection];
+        $tarfinCards = TarfinCard::factory()->forCustomer($customer)->active()->count(2)->create();
+    
         $response = $this->get($this->api);
-        
-        $response->assertOk()->assertJson($expectedJson);
+        $response->assertOk()->assertJson(fn (AssertableJson $json) =>
+        $json->has('data')
+            ->has('data.0',fn ($json) => 
+                $json->where('id', $tarfinCards->first()->id)
+                    ->where('type', $tarfinCards->first()->type)
+                    ->where('is_active', $tarfinCards->first()->is_active)
+                    ->where('expiration_date', fn(string $date) => $tarfinCards->first()->expiration_date->eq($date))
+                    ->where('number',$tarfinCards->first()->number)
+            )->has('data.1',fn ($json) =>
+                $json->where('id', $tarfinCards[1]->id)
+                    ->where('type', $tarfinCards[1]->type)
+                    ->where('is_active', $tarfinCards[1]->is_active)
+                    ->where('expiration_date', fn(string $date) => $tarfinCards[1]->expiration_date->eq($date))
+                    ->where('number',$tarfinCards[1]->number)
+        ));
     }
 
     /**
@@ -145,7 +161,14 @@ class TarfinCardControllerTest extends TestCase
 
         $response = $this->put($this->api . '/' . $tarfinCard->id,$payload);
 
-        $response->assertOk()->assertJson(['data' => $payload]);
+        $response->assertOk()->assertJson(fn (AssertableJson $json) =>
+            $json->has('data')->first(fn ($json) => 
+                $json->where('id', $tarfinCard->id)
+                     ->where('type', $tarfinCard->type)
+                     ->where('is_active', true)
+                     ->where('expiration_date', fn(string $date) => $tarfinCard->expiration_date->eq($date))
+                     ->where('number',$tarfinCard->number)
+       ));
     }
 
     /**
@@ -160,7 +183,14 @@ class TarfinCardControllerTest extends TestCase
 
         $response = $this->put($this->api . '/' . $tarfinCard->id,$payload);
 
-        $response->assertOk()->assertJson(['data' => $payload]);
+        $response->assertOk()->assertJson(fn (AssertableJson $json) =>
+            $json->has('data')->first(fn ($json) => 
+                $json->where('id', $tarfinCard->id)
+                    ->where('type', $tarfinCard->type)
+                    ->where('is_active', false)
+                    ->where('expiration_date', fn(string $date) => $tarfinCard->expiration_date->eq($date))
+                    ->where('number',$tarfinCard->number)
+       ));
     }
 
     /**
@@ -227,8 +257,10 @@ class TarfinCardControllerTest extends TestCase
     {
         Notification::fake();
         Http::fake();
+
         $customer = User::factory()->create();
         $tarfinCard = TarfinCard::factory()->forCustomer($customer)->create();
+
         Http::post('http://you-should-mock-this-mail-service', [
             'tarfin_card_id' => $tarfinCard->id,
             'message'        => "Your Tarfin Card #{$tarfinCard->number} is deleted.",
@@ -237,9 +269,16 @@ class TarfinCardControllerTest extends TestCase
         Passport::actingAs($customer,['delete']);
 
         $response = $this->delete($this->api . '/' . $tarfinCard->id);
-        $expectedJson = ['data' => json_decode((new TarfinCardResource($tarfinCard->refresh()))->toJson(),true)];
 
-        $response->assertOk()->assertJson($expectedJson);
+        $response->assertOk()->assertJson(fn (AssertableJson $json) =>
+            $json->has('data')->first(fn ($json) => 
+                $json->where('id', $tarfinCard->id)
+                    ->where('type', $tarfinCard->type)
+                    ->where('is_active', $tarfinCard->is_active)
+                    ->where('expiration_date', fn(string $date) => $tarfinCard->expiration_date->eq($date))
+                    ->where('number',$tarfinCard->number)
+       ));
+
         Notification::assertSentTo([$customer], TarfinCardDeletedNotification::class);
 
         Http::assertSent(function (Request $request) use($tarfinCard) {

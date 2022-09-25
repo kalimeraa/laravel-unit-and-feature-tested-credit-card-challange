@@ -49,12 +49,13 @@ class TarfinCardTransactionControllerTest extends TestCase
 
        $this->assertDatabaseHas('tarfin_card_transactions',$payload);
 
+       Bus::assertDispatched(ProcessTarfinCardTransactionJob::class);
+       
        Http::assertSent(function (Request $request) {
         return $request->url() == 'http://you-should-mock-this-job' &&
                $request['tarfin_card_transaction_id'] == 1;
        });
        
-       Bus::assertDispatched(ProcessTarfinCardTransactionJob::class);
     }
 
     /**
