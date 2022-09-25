@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\CurrencyType;
 use App\Jobs\ProcessTarfinCardTransactionJob;
 use App\Models\TarfinCard;
 use App\Models\TarfinCardTransaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Laravel\Passport\Passport;
@@ -18,7 +20,7 @@ use Illuminate\Support\Facades\Bus;
 
 class TarfinCardTransactionControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase,WithFaker;
 
     /**
      * @test
@@ -50,12 +52,11 @@ class TarfinCardTransactionControllerTest extends TestCase
        $this->assertDatabaseHas('tarfin_card_transactions',$payload);
 
        Bus::assertDispatched(ProcessTarfinCardTransactionJob::class);
-       
+
        Http::assertSent(function (Request $request) {
         return $request->url() == 'http://you-should-mock-this-job' &&
                $request['tarfin_card_transaction_id'] == 1;
        });
-       
     }
 
     /**
@@ -146,5 +147,100 @@ class TarfinCardTransactionControllerTest extends TestCase
         $response->assertForbidden();
     }
 
-    // THE MORE TESTS THE MORE POINTS 🏆
+    /**
+     * @test
+     */
+    public function amount_must_be_an_integer_when_create_a_tarfin_card_transaction()
+    {
+        $customer = User::factory()->create();
+        Passport::actingAs(
+            $customer,
+            ['create']
+        );
+
+        $tarfinCard = TarfinCard::factory()->forCustomer($customer)->active()->create();
+
+        $response = $this->post(
+            $this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions',
+            ['amount' => $this->faker->name(),'currency_code' => CurrencyType::TRY->value],
+            ['Accept' => 'application/json']
+        );
+
+        $expectedJson = [
+            "message" => "The amount must be an integer.",
+            "errors" => [
+                "amount" => [
+                    "The amount must be an integer."
+                ]
+            ]
+       ];
+       
+       $response->assertUnprocessable()->assertJson($expectedJson);
+    }
+
+    /**
+     * @test
+     */
+    public function currency_code_must_be_an_string_and_valid_when_create_a_tarfin_card_transaction()
+    {
+        $customer = User::factory()->create();
+        Passport::actingAs(
+            $customer,
+            ['create']
+        );
+
+        $tarfinCard = TarfinCard::factory()->forCustomer($customer)->active()->create();
+
+        $response = $this->post(
+            $this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions',
+            ['amount' => rand(1,2),'currency_code' => rand(1,2)],
+            ['Accept' => 'application/json']
+        );
+
+        $expectedJson = [
+            "message" => "The currency code must be a string. (and 1 more error)",
+            "errors" => [
+                "currency_code" => [
+                    "The currency code must be a string.",
+                    "The selected currency code is invalid."
+                ]
+            ]
+       ];
+       
+       $response->assertUnprocessable()->assertJson($expectedJson);
+    }
+
+    /**
+     * @test
+     */
+    public function currency_code_and_amount_are_required_when_create_a_tarfin_card_transaction()
+    {
+        $customer = User::factory()->create();
+        Passport::actingAs(
+            $customer,
+            ['create']
+        );
+
+        $tarfinCard = TarfinCard::factory()->forCustomer($customer)->active()->create();
+
+        $response = $this->post(
+            $this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions',
+            [],
+            ['Accept' => 'application/json']
+        );
+
+        $expectedJson = [
+            "message" => "The amount field is required. (and 1 more error)",
+            "errors" => [
+                "amount" => [
+                    "The amount field is required.",
+                ],
+                "currency_code" => [
+                    "The currency code field is required."
+                ]
+            ]
+       ];
+       
+       $response->assertUnprocessable()->assertJson($expectedJson);
+    }
 }
