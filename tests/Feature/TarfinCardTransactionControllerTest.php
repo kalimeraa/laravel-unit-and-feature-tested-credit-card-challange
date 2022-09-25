@@ -80,7 +80,7 @@ class TarfinCardTransactionControllerTest extends TestCase
     {
         $customer = User::factory()->create();
         $tarfinCard = TarfinCard::factory()->active()->forCustomer($customer)->create();
-        Passport::actingAs($customer,['create']);
+        Passport::actingAs($customer,['view']);
         $tarfinCardTransaction = TarfinCardTransaction::factory()->forTarfinCard($tarfinCard)->create();
 
         $response = $this->get('api/tarfin-card-transactions/' . $tarfinCardTransaction->id);
@@ -99,7 +99,7 @@ class TarfinCardTransactionControllerTest extends TestCase
     {
         $customer = User::factory()->create();
         $tarfinCard = TarfinCard::factory()->active()->create();
-        Passport::actingAs($customer,['create']);
+        Passport::actingAs($customer,['view']);
         $tarfinCardTransaction = TarfinCardTransaction::factory()->forTarfinCard($tarfinCard)->create();
 
         $response = $this->get('api/tarfin-card-transactions/' . $tarfinCardTransaction->id);
@@ -114,7 +114,7 @@ class TarfinCardTransactionControllerTest extends TestCase
     {
         $customer = User::factory()->create();
         $tarfinCard = TarfinCard::factory()->active()->forCustomer($customer)->create();
-        Passport::actingAs($customer,['create']);
+        Passport::actingAs($customer,['view-any']);
         $tarfinCardTransactions = TarfinCardTransaction::factory()->forTarfinCard($tarfinCard)->count(2)->create();
 
         $response = $this->get($this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions');
@@ -137,7 +137,7 @@ class TarfinCardTransactionControllerTest extends TestCase
     {
         $customer = User::factory()->create();
         $tarfinCard = TarfinCard::factory()->active()->create();
-        Passport::actingAs($customer,['create']);
+        Passport::actingAs($customer,['view-any']);
         TarfinCardTransaction::factory()->forTarfinCard($tarfinCard)->count(2)->create();
 
         $response = $this->get($this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions');
