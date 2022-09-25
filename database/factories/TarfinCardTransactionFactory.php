@@ -29,4 +29,14 @@ class TarfinCardTransactionFactory extends Factory
             'currency_code'  => $this->faker->randomElement(CurrencyType::cases()),
         ];
     }
+
+     /**
+     * Set customer for Tarfin Card.
+     */
+    public function forTarfinCard(TarfinCard $tarfinCard): Factory
+    {
+        return $this->state(fn (): array => [
+            'tarfin_card_id' => $tarfinCard->id,
+        ]);
+    }
 }

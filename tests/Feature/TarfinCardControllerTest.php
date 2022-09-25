@@ -21,8 +21,6 @@ use Illuminate\Http\Client\Request;
 class TarfinCardControllerTest extends TestCase
 {
     use RefreshDatabase,WithFaker;
-
-    private string $api = 'api/tarfin-cards';
     
     /**
      * @test

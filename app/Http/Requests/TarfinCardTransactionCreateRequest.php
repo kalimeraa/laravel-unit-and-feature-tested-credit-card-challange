@@ -25,7 +25,7 @@ class TarfinCardTransactionCreateRequest extends FormRequest
     {
         return [
             'amount'        => ['required', 'integer'],
-            'currency_code' => ['required', 'string', new Enum(CurrencyType::class)],
+            'currency_code' => ['required', 'string', 'in:' . CurrencyType::toString()],
         ];
     }
 }

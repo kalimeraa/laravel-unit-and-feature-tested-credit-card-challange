@@ -10,4 +10,13 @@ enum CurrencyType: string
     case EUR = 'EUR';
     case LEU = 'LEU';
     case USD = 'USD';
+    
+    public static function toString(): string
+    {
+        $strings = [];
+        foreach(self::cases() as $case) {
+            $strings[] = $case->value;
+        }
+        return implode(',',$strings);
+    }
 }
