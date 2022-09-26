@@ -30,7 +30,7 @@ class TarfinCardTransactionFactory extends Factory
         ];
     }
 
-     /**
+    /**
      * Set customer for Tarfin Card.
      */
     public function forTarfinCard(TarfinCard $tarfinCard): Factory

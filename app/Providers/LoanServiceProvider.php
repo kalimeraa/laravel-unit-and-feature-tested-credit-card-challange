@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Services\LoanService;
@@ -14,7 +16,7 @@ class LoanServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind('loanservice',fn () => new LoanService());
+        $this->app->bind('loanservice', fn () => new LoanService());
     }
 
     /**

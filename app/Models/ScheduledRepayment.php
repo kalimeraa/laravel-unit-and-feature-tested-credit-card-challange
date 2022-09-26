@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\CurrencyType;
@@ -27,7 +29,7 @@ class ScheduledRepayment extends Model
         'outstanding_amount'  => 'integer',
         'currency_code' => CurrencyType::class,
         'status'  => PaymentStatus::class,
-        'due_date' => 'datetime'
+        'due_date' => 'datetime',
     ];
 
     public function loan(): BelongsTo

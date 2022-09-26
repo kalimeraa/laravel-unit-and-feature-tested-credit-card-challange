@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Loan;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      *
@@ -18,7 +19,7 @@ return new class extends Migration
             $table->id();
             $table->foreignIdFor(Loan::class)->constrained();
             $table->unsignedBigInteger('amount');
-            $table->string('currency_code',5);
+            $table->string('currency_code', 5);
             $table->dateTime('received_at')->nullable();
             $table->timestamps();
         });

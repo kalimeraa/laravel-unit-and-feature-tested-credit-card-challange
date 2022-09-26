@@ -11,12 +11,12 @@ use App\Models\TarfinCardTransaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Laravel\Passport\Passport;
 use Tests\TestCase;
-use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Bus;
 
 class TarfinCardTransactionControllerTest extends TestCase
 {
@@ -34,29 +34,28 @@ class TarfinCardTransactionControllerTest extends TestCase
         ]);
 
         $customer = User::factory()->create();
-        Passport::actingAs($customer,['create']);
+        Passport::actingAs($customer, ['create']);
         $tarfinCard = TarfinCard::factory()->forCustomer($customer)->active()->create();
         $payload = TarfinCardTransaction::factory()->make()->toArray();
         unset($payload['tarfin_card_id']);
 
-        $response = $this->post($this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions',$payload);
-        
-        $response->assertCreated()->assertJson(fn (AssertableJson $json) =>
-        $json->has('data')->first(fn ($json) => 
-                $json->where('amount', $payload['amount'])
+        $response = $this->post($this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions', $payload);
+
+        $response->assertCreated()->assertJson(fn (AssertableJson $json) => $json->has('data')->first(
+            fn ($json) => $json->where('amount', $payload['amount'])
                      ->where('currency_code', $payload['currency_code'])
-       ));
+        ));
 
-       $payload['tarfin_card_id'] = $tarfinCard->id;
+        $payload['tarfin_card_id'] = $tarfinCard->id;
 
-       $this->assertDatabaseHas('tarfin_card_transactions',$payload);
+        $this->assertDatabaseHas('tarfin_card_transactions', $payload);
 
-       Bus::assertDispatched(ProcessTarfinCardTransactionJob::class);
+        Bus::assertDispatched(ProcessTarfinCardTransactionJob::class);
 
-       Http::assertSent(function (Request $request) {
-        return $request->url() == 'http://you-should-mock-this-job' &&
-               $request['tarfin_card_transaction_id'] == 1;
-       });
+        Http::assertSent(function (Request $request) {
+            return $request->url() == 'http://you-should-mock-this-job' &&
+                   $request['tarfin_card_transaction_id'] == 1;
+        });
     }
 
     /**
@@ -66,11 +65,11 @@ class TarfinCardTransactionControllerTest extends TestCase
     {
         $tarfinCard = TarfinCard::factory()->active()->create();
         $customer = User::factory()->create();
-        Passport::actingAs($customer,['create']);
+        Passport::actingAs($customer, ['create']);
         $payload = TarfinCardTransaction::factory()->make()->toArray();
         unset($payload['tarfin_card_id']);
 
-        $response = $this->post($this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions',$payload);
+        $response = $this->post($this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions', $payload);
 
         $response->assertForbidden();
     }
@@ -82,14 +81,13 @@ class TarfinCardTransactionControllerTest extends TestCase
     {
         $customer = User::factory()->create();
         $tarfinCard = TarfinCard::factory()->active()->forCustomer($customer)->create();
-        Passport::actingAs($customer,['view']);
+        Passport::actingAs($customer, ['view']);
         $tarfinCardTransaction = TarfinCardTransaction::factory()->forTarfinCard($tarfinCard)->create();
 
         $response = $this->get('api/tarfin-card-transactions/' . $tarfinCardTransaction->id);
 
-        $response->assertOk()->assertJson(fn (AssertableJson $json) =>
-        $json->has('data')->first(fn ($json) => 
-                $json->where('amount', $tarfinCardTransaction->amount)
+        $response->assertOk()->assertJson(fn (AssertableJson $json) => $json->has('data')->first(
+            fn ($json) => $json->where('amount', $tarfinCardTransaction->amount)
                      ->where('currency_code', $tarfinCardTransaction->currency_code->value)
         ));
     }
@@ -101,7 +99,7 @@ class TarfinCardTransactionControllerTest extends TestCase
     {
         $customer = User::factory()->create();
         $tarfinCard = TarfinCard::factory()->active()->create();
-        Passport::actingAs($customer,['view']);
+        Passport::actingAs($customer, ['view']);
         $tarfinCardTransaction = TarfinCardTransaction::factory()->forTarfinCard($tarfinCard)->create();
 
         $response = $this->get('api/tarfin-card-transactions/' . $tarfinCardTransaction->id);
@@ -116,20 +114,21 @@ class TarfinCardTransactionControllerTest extends TestCase
     {
         $customer = User::factory()->create();
         $tarfinCard = TarfinCard::factory()->active()->forCustomer($customer)->create();
-        Passport::actingAs($customer,['view-any']);
+        Passport::actingAs($customer, ['view-any']);
         $tarfinCardTransactions = TarfinCardTransaction::factory()->forTarfinCard($tarfinCard)->count(2)->create();
 
         $response = $this->get($this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions');
-        
-        $response->assertOk()->assertJson(fn (AssertableJson $json) =>
-        $json->has('data')
-            ->has('data.0',fn ($json) => 
-                $json->where('amount', $tarfinCardTransactions->first()->amount)
+
+        $response->assertOk()->assertJson(fn (AssertableJson $json) => $json->has('data')
+            ->has(
+                'data.0',
+                fn ($json) => $json->where('amount', $tarfinCardTransactions->first()->amount)
                 ->where('currency_code', $tarfinCardTransactions->first()->currency_code->value)
-            )->has('data.1',fn ($json) =>
-                $json->where('amount', $tarfinCardTransactions[1]->amount)
+            )->has(
+                'data.1',
+                fn ($json) => $json->where('amount', $tarfinCardTransactions[1]->amount)
                 ->where('currency_code', $tarfinCardTransactions[1]->currency_code->value)
-        ));
+            ));
     }
 
     /**
@@ -139,7 +138,7 @@ class TarfinCardTransactionControllerTest extends TestCase
     {
         $customer = User::factory()->create();
         $tarfinCard = TarfinCard::factory()->active()->create();
-        Passport::actingAs($customer,['view-any']);
+        Passport::actingAs($customer, ['view-any']);
         TarfinCardTransaction::factory()->forTarfinCard($tarfinCard)->count(2)->create();
 
         $response = $this->get($this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions');
@@ -162,20 +161,20 @@ class TarfinCardTransactionControllerTest extends TestCase
 
         $response = $this->post(
             $this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions',
-            ['amount' => $this->faker->name(),'currency_code' => CurrencyType::TRY->value],
+            ['amount' => $this->faker->name(), 'currency_code' => CurrencyType::TRY->value],
             ['Accept' => 'application/json']
         );
 
         $expectedJson = [
-            "message" => "The amount must be an integer.",
-            "errors" => [
-                "amount" => [
-                    "The amount must be an integer."
-                ]
-            ]
+            'message' => 'The amount must be an integer.',
+            'errors' => [
+                'amount' => [
+                    'The amount must be an integer.',
+                ],
+            ],
        ];
-       
-       $response->assertUnprocessable()->assertJson($expectedJson);
+
+        $response->assertUnprocessable()->assertJson($expectedJson);
     }
 
     /**
@@ -193,21 +192,21 @@ class TarfinCardTransactionControllerTest extends TestCase
 
         $response = $this->post(
             $this->api . '/' . $tarfinCard->id . '/tarfin-card-transactions',
-            ['amount' => rand(1,2),'currency_code' => rand(1,2)],
+            ['amount' => rand(1, 2), 'currency_code' => rand(1, 2)],
             ['Accept' => 'application/json']
         );
 
         $expectedJson = [
-            "message" => "The currency code must be a string. (and 1 more error)",
-            "errors" => [
-                "currency_code" => [
-                    "The currency code must be a string.",
-                    "The selected currency code is invalid."
-                ]
-            ]
+            'message' => 'The currency code must be a string. (and 1 more error)',
+            'errors' => [
+                'currency_code' => [
+                    'The currency code must be a string.',
+                    'The selected currency code is invalid.',
+                ],
+            ],
        ];
-       
-       $response->assertUnprocessable()->assertJson($expectedJson);
+
+        $response->assertUnprocessable()->assertJson($expectedJson);
     }
 
     /**
@@ -230,17 +229,17 @@ class TarfinCardTransactionControllerTest extends TestCase
         );
 
         $expectedJson = [
-            "message" => "The amount field is required. (and 1 more error)",
-            "errors" => [
-                "amount" => [
-                    "The amount field is required.",
+            'message' => 'The amount field is required. (and 1 more error)',
+            'errors' => [
+                'amount' => [
+                    'The amount field is required.',
                 ],
-                "currency_code" => [
-                    "The currency code field is required."
-                ]
-            ]
+                'currency_code' => [
+                    'The currency code field is required.',
+                ],
+            ],
        ];
-       
-       $response->assertUnprocessable()->assertJson($expectedJson);
+
+        $response->assertUnprocessable()->assertJson($expectedJson);
     }
 }

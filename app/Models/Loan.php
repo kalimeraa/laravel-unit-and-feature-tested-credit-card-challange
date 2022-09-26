@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\CurrencyType;
@@ -13,6 +15,7 @@ class Loan extends Model
     use HasFactory;
 
     protected $fillable = [
+        'id',
         'user_id',
         'amount',
         'terms',
@@ -34,5 +37,10 @@ class Loan extends Model
     public function scheduledRepayments(): HasMany
     {
         return $this->hasMany(ScheduledRepayment::class);
+    }
+
+    public function receivedRepayments(): HasMany
+    {
+        return $this->hasMany(ReceivedRepayment::class);
     }
 }
