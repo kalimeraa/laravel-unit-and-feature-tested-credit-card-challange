@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Providers\LoanServiceProvider;
 use Illuminate\Support\Facades\Facade;
 
 return [
@@ -178,6 +179,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        LoanServiceProvider::class
 
     ],
 
